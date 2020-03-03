@@ -1,0 +1,10 @@
+
+if [ "x$DEVICE" = "xeth0" ]; then
+	logger -t ETH0_TTYD ${ACTION}
+	if [ "x${ACTION}" = "xifup" ];then
+		logger -t ETH0_TTYD "start on ${DEVICE}"
+		/usr/bin/ttyd -i eth0 /bin/login >/tmp/eth0_ttyd.log 2>&1 &	
+	fi
+fi
+
+

@@ -1,0 +1,52 @@
+#!/bin/sh
+
+zero_enable=$(uci get zerotier.sample_config.enabled)
+
+if [ $zero_enable -eq 1 ]; then
+
+if [ -f /tmp/zero.log ];then
+while [ "$(ifconfig -a | grep zt | awk '{print $1}')" = "" ]  
+do 
+   sleep 1
+done
+fi
+
+nat_enable=$(uci get zerotier.sample_config.nat)
+zt0=$(ifconfig -a | grep zt | awk '{print $1}' | head -n 1)
+
+if [ -n "$zt0" ];then
+  echo "zt interface $zt0 is started!"
+else
+  echo "zt interface not started!"
+  exit 0
+fi
+echo $zt0 > /tmp/zt.nif
+iptables -D FORWARD -i $zt0 -j ACCEPT 2>/dev/null
+iptables -D FORWARD -o $zt0 -j ACCEPT 2>/dev/null
+iptables -t nat -D POSTROUTING -o $zt0 -j MASQUERADE 2>/dev/null
+if [ $nat_enable -eq 1 ]; then
+  echo "setting iptables for $zt0"
+  iptables -I FORWARD -i $zt0 -j ACCEPT
+  iptables -I FORWARD -o $zt0 -j ACCEPT
+  iptables -t nat -I POSTROUTING -o $zt0 -j MASQUERADE
+  while [ -z "$ip_segment" ];
+  do
+    ip_segment=$(ip route | grep "dev $zt0 proto" | awk '{print $1}')
+    sleep 1
+  done
+  echo "get ip segment: $ip_segment"
+  iptables -t nat -I POSTROUTING -s $ip_segment -j MASQUERADE
+fi
+
+if ! grep $zt0 /etc/config/network -q; then
+  echo "updating /etc/config/network with $zt0"
+  uci del network.zerotier
+  uci set network.zerotier=interface
+  uci set network.zerotier.ifname=$zt0
+  uci set network.zerotier.proto=dhcp
+  uci commit
+  #/etc/init.d/network reload         # do not open this
+  /etc/init.d/firewall restart
+fi
+echo "/etc/zerotier.start finish"
+fi

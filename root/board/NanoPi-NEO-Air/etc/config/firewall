@@ -1,0 +1,104 @@
+config rule
+	option enabled '1'
+	option target 'ACCEPT'
+	option proto 'udp'
+	option dest_port '9993'
+	option name 'Allow-ZeroTier-Inbound'
+	option src '*'
+
+config include 'zerotier'
+	option type 'script'
+	option path '/etc/zerotier.start'
+	option reload '1'
+
+config include 'miniupnpd'
+	option type 'script'
+	option path '/usr/share/miniupnpd/firewall.include'
+	option family 'any'
+	option reload '1'
+
+config include 'adbyby'
+	option type 'script'
+	option path '/usr/share/adbyby/firewall.include'
+	option reload '1'
+
+config rule 'adblock'
+	option name 'adblock'
+	option target 'DROP'
+	option src 'wan'
+	option proto 'tcp'
+	option dest_port '8118'
+
+config rule 'kms'
+	option name 'kms'
+	option target 'ACCEPT'
+	option src 'wan'
+	option proto 'tcp'
+	option dest_port '1688'
+
+config include 'mia'
+	option type 'script'
+	option path '/etc/mia.include'
+	option reload '1'
+
+config include 'pptpd'
+	option type 'script'
+	option path '/etc/pptpd.include'
+	option reload '1'
+
+config rule 'pptp'
+	option name 'pptp'
+	option target 'ACCEPT'
+	option src 'wan'
+	option proto 'tcp'
+	option dest_port '1723'
+
+config rule 'gre'
+	option name 'gre'
+	option target 'ACCEPT'
+	option src 'wan'
+	option proto '47'
+
+config zone
+	option name 'wan'
+	option input 'ACCEPT'
+	option output 'ACCEPT'
+	option forward 'ACCEPT'
+	option masq '1'
+	option mtu_fix '1'
+	option network 'wan wan6'
+
+config zone
+	option name 'zerotier'
+	option input 'ACCEPT'
+	option forward 'ACCEPT'
+	option output 'ACCEPT'
+	option network 'zerotier'
+
+config forwarding
+	option src 'zerotier'
+	option dest 'wan'
+
+config redirect
+	option name 'YourServerName'
+	option src 'zerotier'
+	option proto 'tcpudp'
+	option dest_ip '169.254.0.1'
+	option target 'DNAT'
+	option dest 'wan'
+	option src_dport '100-9000'
+	option dest_port '100-9000'
+
+config defaults
+
+config zone
+	option name 'lan'
+	option input 'ACCEPT'
+	option output 'ACCEPT'
+	option forward 'ACCEPT'
+	option network 'lan'
+
+config forwarding
+	option dest 'wan'
+	option src 'lan'
+
